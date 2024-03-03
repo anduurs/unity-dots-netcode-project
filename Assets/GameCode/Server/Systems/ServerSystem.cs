@@ -110,6 +110,16 @@ namespace GameCode.Server.Systems
                     Scale = 1f
                 });
                 
+                ecb.SetComponent(unit, new Position2dComponent
+                {
+                    Position = new float2(UnityEngine.Random.Range(-10.0f, 10.0f), UnityEngine.Random.Range(-10.0f, 10.0f))
+                });
+                
+                ecb.SetComponent(unit, new RadiusComponent
+                {
+                    Radius = 0.3f
+                });
+                
                 Debug.Log("[Server]: Spawned unit ");
                 
                 ecb.DestroyEntity(entity);

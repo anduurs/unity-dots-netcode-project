@@ -12,6 +12,9 @@ namespace GameCode.Authoring
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<HordeUnitTag>(entity);
+                AddComponent<Position2dComponent>(entity);
+                AddComponent<VelocityComponent>(entity);
+                AddComponent<RadiusComponent>(entity);
             }
         }
     }

@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8386639242445964180}
+  - component: {fileID: 2727820197755208932}
   - component: {fileID: 1799718682812341858}
   - component: {fileID: 6360572880487956370}
   m_Layer: 0
@@ -34,6 +35,18 @@ Transform:
   - {fileID: 4463513467968327436}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2727820197755208932
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7237664444794676141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d560afe17be58e24b835faab814ab5f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1799718682812341858
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -59,10 +72,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   DefaultGhostMode: 0
-  SupportedGhostModes: 2
+  SupportedGhostModes: 1
   OptimizationMode: 0
   Importance: 1
-  prefabId: cf494f7e8e3dc68449cf05db029a6210
+  prefabId: 397fc0b9c23ff1e48a76555de850f8b8
   HasOwner: 1
   SupportAutoCommandTarget: 1
   TrackInterpolationDelay: 0

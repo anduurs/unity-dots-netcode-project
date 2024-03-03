@@ -1,8 +1,10 @@
+using GameCode.Shared.Components;
 using GameCode.Shared.RpcCommands;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.NetCode;
+using Unity.Scenes;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -17,6 +19,10 @@ namespace GameCode.Server.Systems
     {
         private ComponentLookup<NetworkId> _connectedClients;
         
+        // TODO make a prefab handling system
+        private Entity _playerPrefab = Entity.Null;
+        private Entity _unitPrefab = Entity.Null;
+        
         protected override void OnCreate()
         {
             _connectedClients = GetComponentLookup<NetworkId>(true);
@@ -24,6 +30,30 @@ namespace GameCode.Server.Systems
 
         protected override void OnUpdate()
         {
+            var prefabEcb = new EntityCommandBuffer(Allocator.Temp);
+
+            foreach (var (prefabLoadResult, entity) in SystemAPI.Query<RefRO<PrefabLoadResult>>()
+                         .WithAll<PrefabReferenceComponent>()
+                         .WithEntityAccess())
+            {
+                var entityPrefab = prefabLoadResult.ValueRO.PrefabRoot;
+                if (EntityManager.HasComponent<PlayerTag>(entityPrefab))
+                {
+                    _playerPrefab = entityPrefab;
+                }
+                else if (EntityManager.HasComponent<HordeUnitTag>(entityPrefab))
+                {
+                    _unitPrefab = entityPrefab;
+                }
+                
+                prefabEcb.RemoveComponent<PrefabReferenceComponent>(entity);
+            }
+            
+            prefabEcb.Playback(EntityManager);
+            prefabEcb.Dispose();
+            
+            if (_playerPrefab == Entity.Null || _unitPrefab == Entity.Null) return;
+            
             _connectedClients.Update(this);
             
             var ecb = new EntityCommandBuffer(Allocator.Temp);
@@ -35,31 +65,27 @@ namespace GameCode.Server.Systems
                 ecb.AddComponent<InitializedClient>(entity);
                 Debug.Log("[Server]: Client with connected with id: " + id.ValueRO.Value);
 
-                var prefabsData = SystemAPI.GetSingleton<PrefabsData>();
-                
-                if (prefabsData.Player != Entity.Null)
+                var player = ecb.Instantiate(_playerPrefab);
+                ecb.SetComponent(player, new LocalTransform
                 {
-                    var player = ecb.Instantiate(prefabsData.Player);
-                    ecb.SetComponent(player, new LocalTransform
-                    {
-                        Position = new float3(UnityEngine.Random.Range(-10.0f, 10.0f), 0, UnityEngine.Random.Range(-10.0f, 10.0f)),
-                        Rotation = quaternion.identity,
-                        Scale = 1f
-                    });
-                    
-                    ecb.SetComponent(player, new GhostOwner
-                    {
-                        NetworkId = id.ValueRO.Value
-                    });
-                    
-                    // link the spawned player to the client connection entity. This will ensure that the spawned player entity gets destroyed when client disconnects.
-                    ecb.AppendToBuffer(entity, new LinkedEntityGroup
-                    {
-                        Value = player
-                    });
-                    
-                    Debug.Log("[Server]: Spawned player");
-                }
+                    Position = new float3(UnityEngine.Random.Range(-10.0f, 10.0f), 0, UnityEngine.Random.Range(-10.0f, 10.0f)),
+                    Rotation = quaternion.identity,
+                    Scale = 1f
+                });
+                
+                ecb.SetComponent(player, new GhostOwner
+                {
+                    NetworkId = id.ValueRO.Value
+                });
+                
+                // link the spawned player to the client connection entity. This will ensure that the spawned player entity gets destroyed when client disconnects.
+                ecb.AppendToBuffer(entity, new LinkedEntityGroup
+                {
+                    Value = player
+                });
+                
+                Debug.Log("[Server]: Spawned player");
+                
                 
                 SendMessageRpc("Client with connected with id: " + id.ValueRO.Value, ConnectionManager.ServerWorld);
             }
@@ -76,20 +102,15 @@ namespace GameCode.Server.Systems
                          .Query<RefRO<ReceiveRpcCommandRequest>, RefRO<SpawnUnitRpcCommand>>()
                          .WithEntityAccess())
             {
-                var prefabsData = SystemAPI.GetSingleton<PrefabsData>();
-
-                if (prefabsData.Unit != Entity.Null)
+                var unit = ecb.Instantiate(_unitPrefab);
+                ecb.SetComponent(unit, new LocalTransform
                 {
-                    var unit = ecb.Instantiate(prefabsData.Unit);
-                    ecb.SetComponent(unit, new LocalTransform
-                    {
-                        Position = new float3(UnityEngine.Random.Range(-10.0f, 10.0f), 0, UnityEngine.Random.Range(-10.0f, 10.0f)),
-                        Rotation = quaternion.identity,
-                        Scale = 1f
-                    });
-                    
-                    Debug.Log("[Server]: Spawned unit ");
-                }
+                    Position = new float3(UnityEngine.Random.Range(-10.0f, 10.0f), 0, UnityEngine.Random.Range(-10.0f, 10.0f)),
+                    Rotation = quaternion.identity,
+                    Scale = 1f
+                });
+                
+                Debug.Log("[Server]: Spawned unit ");
                 
                 ecb.DestroyEntity(entity);
             }

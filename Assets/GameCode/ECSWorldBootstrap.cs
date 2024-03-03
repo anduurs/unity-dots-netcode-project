@@ -2,7 +2,7 @@ using Unity.NetCode;
 using UnityEngine.Scripting;
 
 [Preserve]
-public sealed class AutoConnectBootstrap : ClientServerBootstrap
+public sealed class EcsWorldBootstrap : ClientServerBootstrap
 {
     public override bool Initialize(string defaultWorldName)
     {

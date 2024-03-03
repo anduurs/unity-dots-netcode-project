@@ -36,7 +36,7 @@ public class Prefabs : MonoBehaviour
                 Debug.LogError("Unit Prefab was null, baking failed.");
             }
             
-            var entity = GetEntity(TransformUsageFlags.None);
+            var entity = GetEntity(TransformUsageFlags.Dynamic);
             
             AddComponent(entity, new PrefabsData
             {

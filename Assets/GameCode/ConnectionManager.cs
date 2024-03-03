@@ -44,6 +44,7 @@ public sealed class ConnectionManager : MonoBehaviour
 
     private IEnumerator Connect()
     {
+        Application.runInBackground = true;
         if (s_Role is Role.ServerClient or Role.Server)
         {
             ServerWorld = ClientServerBootstrap.CreateServerWorld("ServerWorld");

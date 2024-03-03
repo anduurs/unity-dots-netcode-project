@@ -14,6 +14,7 @@ namespace GameCode.Client.Player
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent<PlayerTag>(entity);
+                //AddComponent<LocalPlayer>(entity);
                 AddComponent<PlayerInputData>(entity);
                 AddComponent(entity, new PlayerData
                 {

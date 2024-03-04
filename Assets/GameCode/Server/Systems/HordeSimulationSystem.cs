@@ -43,6 +43,11 @@ namespace GameCode.Server.Systems
         private const float c_timeStep = 0.25f;
         private const float RVO_EPSILON = 0.00001f;
 
+        private ComponentTypeHandle<Position2dComponent> _positionTypeHandle;
+        private ComponentTypeHandle<VelocityComponent> _velocityTypeHandle;
+        private ComponentTypeHandle<RadiusComponent> _radiusTypeHandle;
+        private ComponentTypeHandle<LocalTransform> _localTransformTypeHandle;
+
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
@@ -53,6 +58,11 @@ namespace GameCode.Server.Systems
 
             _spatialGrid = new NativeArray<int>(_cellsAcross * _cellsAcross * (c_bucketSize + 1), Allocator.Persistent);
             _activeCells = new NativeList<int>(_agentsQuery.CalculateEntityCount(), Allocator.Persistent);
+
+            _positionTypeHandle = state.GetComponentTypeHandle<Position2dComponent>();
+            _velocityTypeHandle = state.GetComponentTypeHandle<VelocityComponent>();
+            _radiusTypeHandle = state.GetComponentTypeHandle<RadiusComponent>();
+            _localTransformTypeHandle = state.GetComponentTypeHandle<LocalTransform>();
         }
 
         [BurstCompile]
@@ -63,6 +73,11 @@ namespace GameCode.Server.Systems
             var copyPositions = new NativeArray<float2>(agentCount, Allocator.TempJob);
             var copyVelocities = new NativeArray<float2>(agentCount, Allocator.TempJob);
             var copyRadius = new NativeArray<float>(agentCount, Allocator.TempJob);
+            
+            _positionTypeHandle.Update(ref state);
+            _velocityTypeHandle.Update(ref state);
+            _radiusTypeHandle.Update(ref state);
+            _localTransformTypeHandle.Update(ref state);
 
             // PART 1: These three jobs all run on a separate threed, but are single threaded on that thread.
             // This is faster than spreading each job over multiple threads.
@@ -71,9 +86,9 @@ namespace GameCode.Server.Systems
 
             var copyJob = new CopyAgentDataJob
             {
-                PositionTypeHandle = state.GetComponentTypeHandle<Position2dComponent>(true),
-                VelocityTypeHandle = state.GetComponentTypeHandle<VelocityComponent>(true),
-                RadiusTypeHandle = state.GetComponentTypeHandle<RadiusComponent>(true),
+                PositionTypeHandle = _positionTypeHandle,
+                VelocityTypeHandle = _velocityTypeHandle,
+                RadiusTypeHandle = _radiusTypeHandle,
                 CopyPositions = copyPositions,
                 CopyVelocities = copyVelocities,
                 CopyRadius = copyRadius
@@ -85,7 +100,7 @@ namespace GameCode.Server.Systems
                 BucketSize = c_bucketSize,
                 CellsAcross = _cellsAcross,
                 CellSize = c_cellSize,
-                PositionTypeHandle = state.GetComponentTypeHandle<Position2dComponent>(true),
+                PositionTypeHandle = _positionTypeHandle,
                 SpatialGrid = _spatialGrid,
             }.Schedule(_agentsQuery, state.Dependency);
 
@@ -95,7 +110,7 @@ namespace GameCode.Server.Systems
                 BucketSize = c_bucketSize,
                 CellsAcross = _cellsAcross,
                 CellSize = c_cellSize,
-                PositionTypeHandle = state.GetComponentTypeHandle<Position2dComponent>(true),
+                PositionTypeHandle = _positionTypeHandle,
                 ActiveCells = _activeCells
             }.Schedule(_agentsQuery, state.Dependency);
 
@@ -111,12 +126,12 @@ namespace GameCode.Server.Systems
 
             for (var i = 0; i < flowfieldArray.Length; i++)
             {
-                flowfieldArray[i] = math.normalize(new float2(random.NextFloat(-1, 1), random.NextFloat(-1, 1)));
+                flowfieldArray[i] = math.normalizesafe(new float2(random.NextFloat(-1, 1), random.NextFloat(-1, 1)));
             }
 
             var updateDesiredVelocitiesJob = new UpdateDesiredVelocityJob
             {
-                PositionTypeHandle = state.GetComponentTypeHandle<Position2dComponent>(true),
+                PositionTypeHandle = _positionTypeHandle,
                 DesiredVelocities = copyDesiredVelocities,
                 FlowFieldGridSize = flowFieldGridSize,
                 FlowField = flowfieldArray,
@@ -164,9 +179,9 @@ namespace GameCode.Server.Systems
             var updatePositionsJob = new UpdatePositionsJob()
             {
                 CopyPositions = copyPositions,
-                PositionTypeHandle = state.GetComponentTypeHandle<Position2dComponent>(),
-                VelocityTypeHandle = state.GetComponentTypeHandle<VelocityComponent>(),
-                LocalTransformTypeHandle = state.GetComponentTypeHandle<LocalTransform>(),
+                PositionTypeHandle = _positionTypeHandle,
+                VelocityTypeHandle = _velocityTypeHandle,
+                LocalTransformTypeHandle = _localTransformTypeHandle,
                 NewVelocities = newVelocities
             }.Schedule(_agentsQuery, collisionAvoidanceJob);
             
@@ -189,8 +204,9 @@ namespace GameCode.Server.Systems
             var copydVelocitiesDisposeHandle = copyVelocities.Dispose(clearChangesJob);
             var copyNewVelocitiesDisposeHandle = newVelocities.Dispose(clearChangesJob);
             var copyRadiusesDisposeHandle = copyRadius.Dispose(clearChangesJob);
+            var copyFlowfieldDisposeHandle = flowfieldArray.Dispose(clearChangesJob);
             
-            var posAndRadiusDeps = JobHandle.CombineDependencies(copyPositionsDisposeHandle, copyRadiusesDisposeHandle);
+            var posAndRadiusDeps = JobHandle.CombineDependencies(copyPositionsDisposeHandle, copyRadiusesDisposeHandle, copyFlowfieldDisposeHandle);
 
             var velocitiesDeps = JobHandle.CombineDependencies(
                 copyDesiredVelocitiesDisposeHandle, 

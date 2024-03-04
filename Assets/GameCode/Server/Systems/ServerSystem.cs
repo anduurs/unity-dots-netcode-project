@@ -68,7 +68,7 @@ namespace GameCode.Server.Systems
                 var player = ecb.Instantiate(_playerPrefab);
                 ecb.SetComponent(player, new LocalTransform
                 {
-                    Position = new float3(UnityEngine.Random.Range(-10.0f, 10.0f), 0, UnityEngine.Random.Range(-10.0f, 10.0f)),
+                    Position = new float3(50, 0, 50),
                     Rotation = quaternion.identity,
                     Scale = 1f
                 });
@@ -105,14 +105,14 @@ namespace GameCode.Server.Systems
                 var unit = ecb.Instantiate(_unitPrefab);
                 ecb.SetComponent(unit, new LocalTransform
                 {
-                    Position = new float3(UnityEngine.Random.Range(-10.0f, 10.0f), 0, UnityEngine.Random.Range(-10.0f, 10.0f)),
+                    Position = new float3(UnityEngine.Random.Range(10.0f, 100.0f), 0, UnityEngine.Random.Range(10.0f, 100.0f)),
                     Rotation = quaternion.identity,
                     Scale = 1f
                 });
                 
                 ecb.SetComponent(unit, new Position2dComponent
                 {
-                    Position = new float2(UnityEngine.Random.Range(-10.0f, 10.0f), UnityEngine.Random.Range(-10.0f, 10.0f))
+                    Position = new float2(UnityEngine.Random.Range(10.0f, 100.0f), UnityEngine.Random.Range(10.0f, 100.0f))
                 });
                 
                 ecb.SetComponent(unit, new RadiusComponent
